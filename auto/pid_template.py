@@ -15,8 +15,10 @@ def make_car(desired_v:float=20.0, dt:float=0.1) -> dict:
         "step" : 0,
     
         #hint: use these variables in the integral and derivative portion of your PID control (steps 5 and 6 )
-        "error_prev" : None,
-        "net_integral" : 0.0
+        "error" : None, 
+        "error_prev" : 0.0,
+        "net_integral" : 0.0,
+        "desired_a" : 0.0
     }
     return car_state_dictionary
 
@@ -43,7 +45,15 @@ def update(car: dict, throttle_perc: float, mass: float = 1000, max_throttle_for
 def calculate_desired_acceleration(car: dict, K_P: float, K_I: float = 0.0, K_D: float = 0.0) -> tuple[float, float]:
         #input: car["v"], car["desired_v"] (floats)
         #output: desired acceleration and error tuple(float, float)
-        pass # delete this line and write your PID code here
+        car["error"] = car["desired_v"] - car["v"]
+        car["net_integral"] += car["error"]
+        car["desired_a"] = (K_P * car["error"]) + (K_I * car["net_integral"] * car["dt"]) + (K_D * (car["error"] - car["error_prev"]) * car["dt"])
+        car["error_prev"] = car["error"]
+
+        print(f"Error: {car['error']}")
+        print(f"Current Velocity: {car["v"]} m/s")
+        print(f"Acceleration Desired: {car["desired_a"]} m/s^2")
+        return (car["desired_a"], car["error"])
 
 
 
@@ -51,4 +61,9 @@ def calculate_desired_acceleration(car: dict, K_P: float, K_I: float = 0.0, K_D:
 def acceleration_to_throttle_percentage(acceleration_desired: float, mass: float = 1000, max_throttle_force: float = 5000) -> float:
         #input: desired_acceleration(float)
         #output: throttle percentage (float, -1 to 1)
-        pass # delete this line and write your code to convert desired acceleration to throttle here
+        acceleration_max = max_throttle_force / mass                                          # Step 1) a = F * m
+        print(f"Max Acceleration: {acceleration_max} m/s^2")
+        throttle_percentage =     acceleration_desired / acceleration_max                     # creating throttle percentage
+        res = np.clip(a=throttle_percentage, a_min=-1.0, a_max=1.0)                           # clipping throttle percentage
+        print(f"Throttle %: {res}\n")
+        return res
