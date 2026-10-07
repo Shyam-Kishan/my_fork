@@ -77,19 +77,26 @@ create_car_data(car8)
 # Car 9
 create_car_data(car9)
 
-# Create Data
-# X = torch.arrange(start, end, step).unsqueeze(dim=1)
-X1 = torch.tensor(data=velocities, dtype=torch.float32).unsqueeze(dim=1)
-X2 = torch.tensor(data=desired_v, dtype=torch.float32).unsqueeze(dim=1)
-X = torch.cat((X1, X2), dim=1)
-print(f"X shape: {X.shape}")
+### Create Data
 
+# Gather Velocity data
+X1 = torch.tensor(data=velocities, dtype=torch.float32).unsqueeze(dim=1)
+
+# Gather Desired Velicty data
+X2 = torch.tensor(data=desired_v, dtype=torch.float32).unsqueeze(dim=1)
+
+# Combined Velicty adn Desired Velocity Data into 2-D tensor
+X = torch.cat((X1, X2), dim=1)
+# print(f"X shape: {X.shape}")
+
+# Gather Desired Acceleration data
 y = torch.tensor(data=accelerations).unsqueeze(dim=1)
-print(f"y shape: {y.shape}")
-# print(len(X), len(y))
+# print(f"y shape: {y.shape}")
+
 
 # Splitting Data - 75% of all data collected will be used for training
 train_split = int(0.75 * len(X))
+
 X_train, y_train = X[:train_split], y[:train_split]
 X_test, y_test = X[train_split:], y[train_split:]
 
@@ -109,7 +116,6 @@ class LinearRegressionModel(nn.Module): # <- almost everything in PyTorch is a n
 # Set the manual seed when creating the model (not always needed)
 torch.manual_seed(42)
 model_1 = LinearRegressionModel()
-# print (model_1, model_1.state_dict())
 
 # Creating loss function
 loss_fn = nn.L1Loss()
@@ -180,15 +186,9 @@ def plot_predictions(train_data=X_train,
     '''
     Plots training data, test data, and compares predictions
     '''
-    # reshaping train_data and test_data
-    # torch.reshape(train_data, (len(train_data), 1))
-    # torch.reshape(test_data, (len(test_data), 1))
-
-    # reshaping train_lavels and test_labels
-    # torch.reshape(train_labels, (len(train_labels), 2))
-    # torch.reshape(test_labels, (len(test_labels), 2))
-
     # plt.figure(figsize=(10, 7))
+
+    ### Plotting Data - using cars' current velocities as X, desired accelerations as Y
 
     # Plot training data in blue
     plt.scatter(train_data[:, 0], train_labels, c="b", s=4, label="Training data")
@@ -197,7 +197,7 @@ def plot_predictions(train_data=X_train,
     plt.scatter(test_data[:, 0], test_labels, c="g", s=5, label="Testing data")
 
     if predictions is not None:
-        # Plot the predictions in red (predictions were made on the test data)
+        # Plot the predictions in red
         plt.scatter(test_data[:, 0], predictions, c="r", s=6, label="Predictions")
 
     # Show the legend
@@ -212,8 +212,6 @@ model_1.eval()
 with torch.inference_mode():
     y_preds = model_1(X_test)
 
-
-# print(y_preds)
-
+# Show graphs
 plot_predictions()
 plot_predictions(predictions=y_preds)
