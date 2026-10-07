@@ -11,8 +11,8 @@ torch.__version__
 
 
 K_P = 1
-K_I = 0.4           # 0.4
-K_D = 0.2           # 0.2
+K_I = 0.4
+K_D = 0.2
  
 STEPS = 550
  
