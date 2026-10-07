@@ -81,14 +81,15 @@ create_car_data(car9)
 
 # Create Data
 # X = torch.arrange(start, end, step).unsqueeze(dim=1)
-X1 = torch.tensor(data=velocities).unsqueeze(dim=1)
-X2 = torch.tensor(data=desired_v).unsqueeze(dim=1)
+X1 = torch.tensor(data=velocities, dtype=torch.float32).unsqueeze(dim=1)
+X2 = torch.tensor(data=desired_v, dtype=torch.float32).unsqueeze(dim=1)
 X = torch.cat((X1, X2), dim=1)
-print(X)
+print(f"X shape: {X.shape}")
 # X1 = X1.unsqueeze(dim=1)
 # X2 = X2.unsqueeze(dim=1)
 
 y = torch.tensor(data=accelerations).unsqueeze(dim=1)
+print(f"y shape: {y.shape}")
 # print(len(X), len(y))
 
 # Splitting Data
@@ -102,30 +103,33 @@ X_test, y_test = X[train_split:], y[train_split:]
 # Creating Linear Regression model class
 class LinearRegressionModel(nn.Module): # <- almost everything in PyTorch is a nn.Module (think of this as neural network lego blocks)
     def __init__(self):
-        super().__init__() 
-        self.weights = nn.Parameter(torch.randn(1, # <- start with random weights (this will get adjusted as the model learns)
-                                                dtype=torch.float), # <- PyTorch loves float32 by default
-                                   requires_grad=True) # <- can we update this value with gradient descent?)
+        super().__init__()
+        self.linear_layer = nn.Linear(in_features=2, out_features=1)
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.linear_layer(x)
+        # self.weights = nn.Parameter(torch.randn(1, # <- start with random weights (this will get adjusted as the model learns)
+                                               # dtype=torch.float), # <- PyTorch loves float32 by default
+                                   # requires_grad=True) # <- can we update this value with gradient descent?)
 
-        self.bias = nn.Parameter(torch.randn(1, # <- start with random bias (this will get adjusted as the model learns)
-                                            dtype=torch.float), # <- PyTorch loves float32 by default
-                                requires_grad=True) # <- can we update this value with gradient descent?))
+        # self.bias = nn.Parameter(torch.randn(1, # <- start with random bias (this will get adjusted as the model learns)
+                                            # dtype=torch.float), # <- PyTorch loves float32 by default
+                                # requires_grad=True) # <- can we update this value with gradient descent?))
 
     # Forward defines the computation in the model
-    def forward(self, x: torch.Tensor) -> torch.Tensor: # <- "x" is the input data (e.g. training/testing features)
-        return self.weights * x + self.bias # <- this is the linear regression formula (y = m*x + b)
+    # def forward(self, x: torch.Tensor) -> torch.Tensor: # <- "x" is the input data (e.g. training/testing features)
+        # return self.weights * x + self.bias # <- this is the linear regression formula (y = m*x + b)
     
 # Set the manual seed when creating the model (not always needed)
 torch.manual_seed(42)
 model_1 = LinearRegressionModel()
-# print (mode1_1, mode1_1.state_dict())
+# print (model_1, model_1.state_dict())
 
 # Creating loss function
 loss_fn = nn.L1Loss()
 
 # Creating optimizer
-optimizer = torch.optim.SGD(params=model_1.parameters(),
-                            lr=0.001)
+optimizer = torch.optim.SGD(params=model_1.parameters(), lr=0.001)
 
 # Set the number of epochs
 epochs = 1000
@@ -143,7 +147,6 @@ for epoch in range(epochs):
 
     # 1. Forward pass on train data using the forward() method
     y_pred = model_1(X_train)
-    #print(y_pred)
 
     # 2. Calculate the loss (how different are our models predictions to ground truth)
     loss = loss_fn(y_pred, y_train)
@@ -216,3 +219,4 @@ with torch.inference_mode():
 # print(y_preds)
 
 # plot_predictions(predictions=y_preds)
+# plot_predictions()
