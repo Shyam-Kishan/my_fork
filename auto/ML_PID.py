@@ -6,6 +6,7 @@ from pid_template import acceleration_to_throttle_percentage
 import torch
 from torch import nn
 import numpy
+torch.__version__
 
 K_P = 1
 K_I = 0.0
@@ -21,8 +22,8 @@ car4 = make_car(desired_v=25.0, dt=0.1)
 car5 = make_car(desired_v=30.0, dt=0.1)
 car6 = make_car(desired_v=35.0, dt=0.1)
 car7 = make_car(desired_v=40.0, dt=0.1)
-car8 = make_car(desired_v=45.0, dt=0.1)
-car9 = make_car(desired_v=50.0, dt=0.1)
+car8 = make_car(desired_v=22.0, dt=0.1)
+car9 = make_car(desired_v=33.0, dt=0.1)
 
 
 accelerations = []          # Target predicton for model to make    (output)
@@ -34,6 +35,7 @@ times = []
 # Function to generate PID data
 def create_car_data(car_x: dict):
     for i in range (STEPS):
+        print(f"For Desired Velocity: {car_x["desired_v"]}")
         print(f"===== Step : {i} =====")
         calculate_desired_acceleration(car=car_x, K_P=K_P, K_I=K_I, K_D=K_D)
         throttle_percentage = acceleration_to_throttle_percentage(acceleration_desired=car_x["desired_a"])
@@ -41,7 +43,7 @@ def create_car_data(car_x: dict):
 
         velocities.append(car_x["v"])
         desired_v.append(car_x["desired_v"])
-        accelerations.append(car_x["a"])
+        accelerations.append(car_x["desired_a"])
         errors.append(car_x["error_prev"])
         times.append(car_x["t"])
 
@@ -75,25 +77,19 @@ create_car_data(car8)
 # Car 9
 create_car_data(car9)
 
-# Create known parameters
-# weight = 0.7
-# bias = 0.3
-
 # Create Data
 # X = torch.arrange(start, end, step).unsqueeze(dim=1)
 X1 = torch.tensor(data=velocities, dtype=torch.float32).unsqueeze(dim=1)
 X2 = torch.tensor(data=desired_v, dtype=torch.float32).unsqueeze(dim=1)
 X = torch.cat((X1, X2), dim=1)
 print(f"X shape: {X.shape}")
-# X1 = X1.unsqueeze(dim=1)
-# X2 = X2.unsqueeze(dim=1)
 
 y = torch.tensor(data=accelerations).unsqueeze(dim=1)
 print(f"y shape: {y.shape}")
 # print(len(X), len(y))
 
-# Splitting Data
-train_split = int(0.8 * len(X))
+# Splitting Data - 75% of all data collected will be used for training
+train_split = int(0.75 * len(X))
 X_train, y_train = X[:train_split], y[:train_split]
 X_test, y_test = X[train_split:], y[train_split:]
 
@@ -104,21 +100,11 @@ X_test, y_test = X[train_split:], y[train_split:]
 class LinearRegressionModel(nn.Module): # <- almost everything in PyTorch is a nn.Module (think of this as neural network lego blocks)
     def __init__(self):
         super().__init__()
+        # Have in initialize a Linear Layer 
         self.linear_layer = nn.Linear(in_features=2, out_features=1)
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.linear_layer(x)
-        # self.weights = nn.Parameter(torch.randn(1, # <- start with random weights (this will get adjusted as the model learns)
-                                               # dtype=torch.float), # <- PyTorch loves float32 by default
-                                   # requires_grad=True) # <- can we update this value with gradient descent?)
-
-        # self.bias = nn.Parameter(torch.randn(1, # <- start with random bias (this will get adjusted as the model learns)
-                                            # dtype=torch.float), # <- PyTorch loves float32 by default
-                                # requires_grad=True) # <- can we update this value with gradient descent?))
-
-    # Forward defines the computation in the model
-    # def forward(self, x: torch.Tensor) -> torch.Tensor: # <- "x" is the input data (e.g. training/testing features)
-        # return self.weights * x + self.bias # <- this is the linear regression formula (y = m*x + b)
     
 # Set the manual seed when creating the model (not always needed)
 torch.manual_seed(42)
@@ -129,7 +115,9 @@ model_1 = LinearRegressionModel()
 loss_fn = nn.L1Loss()
 
 # Creating optimizer
-optimizer = torch.optim.SGD(params=model_1.parameters(), lr=0.001)
+# optimizer = torch.optim.SGD(params=model_1.parameters(), lr=0.0006625)
+optimizer = torch.optim.SGD(params=model_1.parameters(), lr=0.0009)
+
 
 # Set the number of epochs
 epochs = 1000
@@ -177,11 +165,11 @@ for epoch in range(epochs):
     test_loss = loss_fn(test_pred, y_test.type(torch.float))        # predictions come in torch.float datatype, so comparisons needs to be done with tensors of the same type
 
     # Print out what's happening
-    # if epoch % 10 == 0:
-        # epoch_count.append(epoch)
-        # train_loss_values.append(loss.detach().numpy())
-        # test_loss_values.append(test_loss.detach().numpy())
-        # print(f"Epoch: {epoch} | MAE Train Loss: {loss} | MAE Test loss: {test_loss }")
+    if epoch % 10 == 0:
+        epoch_count.append(epoch)
+        train_loss_values.append(loss.detach().numpy())
+        test_loss_values.append(test_loss.detach().numpy())
+        print(f"Epoch: {epoch} | MAE Train Loss: {loss} | MAE Test loss: {test_loss }")
 
 
 def plot_predictions(train_data=X_train,
@@ -192,22 +180,31 @@ def plot_predictions(train_data=X_train,
     '''
     Plots training data, test data, and compares predictions
     '''
+    # reshaping train_data and test_data
+    # torch.reshape(train_data, (len(train_data), 1))
+    # torch.reshape(test_data, (len(test_data), 1))
 
-    plt.figure(figsize=(10, 7))
+    # reshaping train_lavels and test_labels
+    # torch.reshape(train_labels, (len(train_labels), 2))
+    # torch.reshape(test_labels, (len(test_labels), 2))
+
+    # plt.figure(figsize=(10, 7))
 
     # Plot training data in blue
-    plt.scatter(train_data, train_labels, c="black", s=4, label="Training data")
+    plt.scatter(train_data[:, 0], train_labels, c="b", s=4, label="Training data")
 
     # Plot test data in green
-    plt.scatter(test_data, test_labels, c="g", s=5, label="Testing data")
+    plt.scatter(test_data[:, 0], test_labels, c="g", s=5, label="Testing data")
 
     if predictions is not None:
         # Plot the predictions in red (predictions were made on the test data)
-        plt.scatter(test_data, predictions, c="r", s=6, label="Predictions")
+        plt.scatter(test_data[:, 0], predictions, c="r", s=6, label="Predictions")
 
     # Show the legend
+    plt.xlabel("Current Velocity")
+    plt.ylabel("Desired Aceeleration")
+    plt.title("Linear Regression Model Predicting Desired Acceleration")
     plt.legend(prop={"size" : 14})
-
     plt.show()
 
 model_1.eval()
@@ -218,5 +215,5 @@ with torch.inference_mode():
 
 # print(y_preds)
 
-# plot_predictions(predictions=y_preds)
-# plot_predictions()
+plot_predictions()
+plot_predictions(predictions=y_preds)
