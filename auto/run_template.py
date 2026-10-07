@@ -3,6 +3,12 @@ from pid_template import make_car
 from pid_template import update
 from pid_template import calculate_desired_acceleration
 from pid_template import acceleration_to_throttle_percentage
+import torch
+from torch import nn
+import numpy
+
+torch.__version__
+
 
 K_P = 1
 K_I = 0.4           # 0.4
@@ -25,6 +31,31 @@ for i in range(STEPS):
     velocities.append(car["v"])
     errors.append(car["error_prev"])
     times.append(car["t"])
+
+# Create known parameters
+weight = 0.7
+bias = 0.3
+
+# Create Data
+start = 0
+end = 1
+step = 0.02
+# X = torch.arrange(start, end, step).unsqueeze(dim=1)
+X = torch.tensor(data=velocities)
+X = X.unsqueeze(dim=1)
+
+y = weight * X + bias
+
+# Splitting Data
+train_split = int(0.8 * len(X))
+X_train, y_train = X[:train_split], y[:train_split]
+X_test, y_test = X[train_split:], y[train_split:]
+
+
+# Test to see if training split is correctly made
+# print(len(X_train), len(y_train), len(X_test), len(y_test))
+
+
 
 plt.plot(times, velocities, color="blue", linestyle="--", marker="o")
 plt.title("Velocity over Time")
