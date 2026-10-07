@@ -69,6 +69,18 @@ class LinearRegressionModel(nn.Module): # <- almost everything in PyTorch is a n
     # Forward defines the computation in the model
     def forward(self, x: torch.Tensor) -> torch.Tensor: # <- "x" is the input data (e.g. training/testing features)
         return self.weights * x + self.bias # <- this is the linear regression formula (y = m*x + b)
+    
+# Set the manual seed when creating the model (not always needed)
+torch.manual_seed(42)
+model_1 = LinearRegressionModel()
+# print (mode1_1, mode1_1.state_dict())
+
+# Creating loss function
+loss_fn = nn.L1Loss()
+
+# Creating optimizer
+optimizer = torch.optim.SGD(params=model_1.parameters(),
+                            lr=0.01)
 
 
 
