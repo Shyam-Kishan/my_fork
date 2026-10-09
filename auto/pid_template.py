@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def make_car(desired_v:float=20.0, dt:float=0.1) -> dict:
     """ 
     Generates a dictionary that holds all the car's values. Keeps track of state varaibles.
@@ -61,7 +60,7 @@ def calculate_desired_acceleration(car: dict, K_P: float, K_I: float = 0.0, K_D:
         print(f"Error: {car['error']}")
         print(f"Current Velocity: {car["v"]} m/s")
         print(f"Acceleration Desired: {car["desired_a"]} m/s^2")
-        
+
         return (car["desired_a"], car["error"])
 
 
