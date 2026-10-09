@@ -5,10 +5,7 @@ from pid_template import make_car
 from pid_template import update
 from pid_template import calculate_desired_acceleration
 from pid_template import acceleration_to_throttle_percentage
-import torch
-from torch import nn
-import numpy
-torch.__version__
+
 
 K_P = 1
 K_I = 0.4
