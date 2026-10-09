@@ -15,22 +15,28 @@ K_D = 0.0
 STEPS = 550
 
 car0 = make_car(desired_v=5.0, dt=0.1)
-car1 = make_car(desired_v=10.0, dt=0.1)
-car2 = make_car(desired_v=15.0, dt=0.1)
-car3 = make_car(desired_v=20.0, dt=0.1)
-car4 = make_car(desired_v=25.0, dt=0.1)
-car5 = make_car(desired_v=30.0, dt=0.1)
-car6 = make_car(desired_v=35.0, dt=0.1)
-car7 = make_car(desired_v=40.0, dt=0.1)
-car8 = make_car(desired_v=22.0, dt=0.1)
-car9 = make_car(desired_v=33.0, dt=0.1)
+car1 = make_car(desired_v=7.5, dt=0.1)
+car2 = make_car(desired_v=10.0, dt=0.1)
+car3 = make_car(desired_v=12.5, dt=0.1)
+car4 = make_car(desired_v=15.0, dt=0.1)
+car5 = make_car(desired_v=17.5, dt=0.1)
+car6 = make_car(desired_v=20.0, dt=0.1)
+car7 = make_car(desired_v=22.5, dt=0.1)
+car8 = make_car(desired_v=25.0, dt=0.1)
+car9 = make_car(desired_v=27.5, dt=0.1)
+car10 = make_car(desired_v=30.0, dt=0.1)
+car11 = make_car(desired_v=35.0, dt=0.1)
+car12 = make_car(desired_v=40.0, dt=0.1)
+car13 = make_car(desired_v=45.0, dt=0.1)
+car14 = make_car(desired_v=50.0, dt=0.1)
+car15 = make_car(desired_v=22.0, dt=0.1)
+car16 = make_car(desired_v=33.0, dt=0.1)
 
 
 accelerations = []          # Target predicton for model to make    (output)
 velocities = []             # Model takes this to predict accel     (input)
 desired_v = []              # Model takes this to predict accel     (input)
-errors = []
-times = []
+
 
 # Function to generate PID data
 def create_car_data(car_x: dict):
@@ -44,48 +50,36 @@ def create_car_data(car_x: dict):
         velocities.append(car_x["v"])
         desired_v.append(car_x["desired_v"])
         accelerations.append(car_x["desired_a"])
-        errors.append(car_x["error_prev"])
-        times.append(car_x["t"])
 
 
-### Creating data using 10 different cars and 10 different speeds
-
-# Car 1
+### Generating data using 17 different cars and 17 different speeds
+create_car_data(car0)
 create_car_data(car1)
-
-# Car 2
 create_car_data(car2)
-
-# Car 3
 create_car_data(car3)
-
-# Car 4
 create_car_data(car4)
-
-# Car 5
 create_car_data(car5)
-
-# Car 6
 create_car_data(car6)
-
-# Car 7
 create_car_data(car7)
-
-# Car 8
 create_car_data(car8)
-
-# Car 9
 create_car_data(car9)
+create_car_data(car10)
+create_car_data(car11)
+create_car_data(car12)
+create_car_data(car13)
+create_car_data(car14)
+create_car_data(car15)
+create_car_data(car16)
 
-### Create Data
+### Create Tensors to store gathered data into
 
 # Gather Velocity data
 X1 = torch.tensor(data=velocities, dtype=torch.float32).unsqueeze(dim=1)
 
-# Gather Desired Velicty data
+# Gather Desired Velocity data
 X2 = torch.tensor(data=desired_v, dtype=torch.float32).unsqueeze(dim=1)
 
-# Combined Velicty adn Desired Velocity Data into 2-D tensor
+# Combined Velocity and Desired Velocity Data into 2-D tensor
 X = torch.cat((X1, X2), dim=1)
 # print(f"X shape: {X.shape}")
 
@@ -93,45 +87,47 @@ X = torch.cat((X1, X2), dim=1)
 y = torch.tensor(data=accelerations).unsqueeze(dim=1)
 # print(f"y shape: {y.shape}")
 
-
-# Splitting Data - 75% of all data collected will be used for training
-train_split = int(0.75 * len(X))
+# Splitting Data - 80% of all data collected will be used for training
+train_split = int(0.8 * len(X))
 
 X_train, y_train = X[:train_split], y[:train_split]
 X_test, y_test = X[train_split:], y[train_split:]
 
 # Test to see if training split is correctly made
-# print(len(X_train), len(y_train), len(X_test), len(y_test))
+# print(len(X_train), len(y_train), len(X_test), len(y_test)
 
 # Creating Linear Regression model class
 class LinearRegressionModel(nn.Module): # <- almost everything in PyTorch is a nn.Module (think of this as neural network lego blocks)
     def __init__(self):
         super().__init__()
-        # Have in initialize a Linear Layer 
+        # Have to initialize a Linear Layer to create model parameters
         self.linear_layer = nn.Linear(in_features=2, out_features=1)
-    
+
+    # Define the forward computation (input x flows thorugh nn.Linear())
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.linear_layer(x)
     
 # Set the manual seed when creating the model (not always needed)
 torch.manual_seed(42)
+
+# Instantiate ML model
 model_1 = LinearRegressionModel()
 
-# Creating loss function
+# Creating loss function (Used to calculate the error in the model's predictions)
+# This is the Mean Absolute Error loss function (used for regression problems, aka predicting a number)
 loss_fn = nn.L1Loss()
 
-# Creating optimizer
-# optimizer = torch.optim.SGD(params=model_1.parameters(), lr=0.0006625)
-optimizer = torch.optim.SGD(params=model_1.parameters(), lr=0.0009)
+# Creating optimizer (Tells model to change it's internal parameters to reduce the error in the model's)
+optimizer = torch.optim.SGD(params=model_1.parameters(), lr=0.0005)
 
-
-# Set the number of epochs
-epochs = 1000
+# Set the number of epochs (Number of times we want to train our model given our collected data)
+epochs = 3000
 
 # Create empty loss lists to track values
 train_loss_values = []
 test_loss_values = []
 epoch_count = []
+
 
 for epoch in range(epochs):
     ### Training
@@ -142,7 +138,7 @@ for epoch in range(epochs):
     # 1. Forward pass on train data using the forward() method
     y_pred = model_1(X_train)
 
-    # 2. Calculate the loss (how different are our models predictions to ground truth)
+    # 2. Calculate the loss (how different are our models' predictions to ground truth)
     loss = loss_fn(y_pred, y_train)
 
     # 3. Zero grad of the optimizer
@@ -165,7 +161,10 @@ for epoch in range(epochs):
 
     # debug: Debugger says target size is different than input size for loss_fn()
     # print(len(test_pred), len(y_test))
-    # This isn't the issure, test_pred and y_test are of same length for each epoch
+    # This isn't the issue, test_pred and y_test are of same length for each epoch
+    # Solution: added a Linear Layer to regression model, commanding it
+    #           to take two input features (desired_v and current_v) and
+    #           return one output feature (desired_a).
 
     # 2. Calculate the loss
     test_loss = loss_fn(test_pred, y_test.type(torch.float))        # predictions come in torch.float datatype, so comparisons needs to be done with tensors of the same type
@@ -175,43 +174,47 @@ for epoch in range(epochs):
         epoch_count.append(epoch)
         train_loss_values.append(loss.detach().numpy())
         test_loss_values.append(test_loss.detach().numpy())
-        print(f"Epoch: {epoch} | MAE Train Loss: {loss} | MAE Test loss: {test_loss }")
-
-
-def plot_predictions(train_data=X_train,
-                     train_labels=y_train,
-                     test_data=X_test,
-                     test_labels=y_test,
-                     predictions=None):
-    '''
-    Plots training data, test data, and compares predictions
-    '''
-    # plt.figure(figsize=(10, 7))
-
-    ### Plotting Data - using cars' current velocities as X, desired accelerations as Y
-
-    # Plot training data in blue
-    plt.scatter(train_data[:, 0], train_labels, c="b", s=4, label="Training data")
-
-    # Plot test data in green
-    plt.scatter(test_data[:, 0], test_labels, c="g", s=5, label="Testing data")
-
-    if predictions is not None:
-        # Plot the predictions in red
-        plt.scatter(test_data[:, 0], predictions, c="r", s=6, label="Predictions")
-
-    # Show the legend
-    plt.xlabel("Current Velocity")
-    plt.ylabel("Desired Aceeleration")
-    plt.title("Linear Regression Model Predicting Desired Acceleration")
-    plt.legend(prop={"size" : 14})
-    plt.show()
+        print(f"Epoch: {epoch} | MAE Train Loss: {loss} | MAE Test loss: {test_loss}")
 
 model_1.eval()
 
 with torch.inference_mode():
     y_preds = model_1(X_test)
 
-# Show graphs
-plot_predictions()
-plot_predictions(predictions=y_preds)
+### Show graphs
+
+# Figure without Predictions
+plt.figure(1)
+
+# Plot training data in blue
+plt.scatter(X_train[:, 0], y_train, c="b", s=4, label="Training data")
+
+# Plot test data in green
+plt.scatter(X_test[:, 0], y_test, c="g", s=5, label="Testing data")
+
+# Show the legend
+plt.xlabel("Current Velocity")
+plt.ylabel("Desired Aceeleration")
+plt.title("Linear Regression Model Predicting Desired Acceleration")
+plt.legend(prop={"size" : 14})
+
+
+# Figure with Predictions
+plt.figure(2)
+
+# Plot training data in blue
+plt.scatter(X_train[:, 0], y_train, c="b", s=4, label="Training data")
+
+# Plot test data in green
+plt.scatter(X_test[:, 0], y_test, c="g", s=5, label="Testing data")
+
+# Plot predictions in read
+plt.scatter(X_test[:, 0], y_preds, c="r", s=6, label="Predictions")
+
+# Show the legend
+plt.xlabel("Current Velocity")
+plt.ylabel("Desired Aceeleration")
+plt.title("Linear Regression Model Predicting Desired Acceleration")
+plt.legend(prop={"size" : 14})
+
+plt.show()
